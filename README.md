@@ -1,38 +1,63 @@
-# RESERVITE — Backoffice web (vraie application)
+# RESERVITE — Web (Next.js)
 
-Connecté au vrai backend (`reservite-backend/`), pour les 5 rôles : SuperAdmin,
-Admin Compagnie, Gérant de gare, Caissier, Agent colis & bagages. Le Contrôleur
-utilise l'app mobile (`reservite-mobile-app/`), pas ce backoffice.
+Application web de RESERVITE, branchée sur l'API NestJS (`reservite-backend`). Une seule application, deux usages selon le rôle :
 
-## Installation
+- **Espace Compagnie** : Admin Compagnie, Gérant de gare, Caissier, Agent colis & bagages.
+- **Back-office RESERVITE** : SuperAdmin (création des compagnies, personnel, clients, réclamations).
+
+Les **contrôleurs** (scan des billets) et les **clients** utilisent l'application mobile (`reservite-mobile-app`), pas ce site.
+
+**Stack** : Next.js 15 (App Router), React 19, TypeScript. Aucune autre dépendance d'exécution.
+
+## Démarrer
+
+L'API doit tourner (voir le README de `reservite-backend`).
 
 ```bash
-cd reservite-backoffice-web
-cp .env.example .env
+cp .env.example .env      # NEXT_PUBLIC_API_URL = adresse de l'API
 npm install
-npm run dev
+npm run dev               # http://localhost:3000
 ```
 
-Ouvrez `http://localhost:5174`. Le backend doit tourner (voir son README).
+Comptes de démonstration : voir le README du backend (ex. `yao.kouadio@utb.ci` / `utb2024`).
 
-## Comptes de démonstration
+## Ce qui est disponible, par rôle
 
-Mêmes comptes que partout ailleurs dans le projet — voir `reservite-backend/README.md`.
+| Page | SuperAdmin | Admin Compagnie | Gérant de gare | Caissier | Agent colis |
+|---|:-:|:-:|:-:|:-:|:-:|
+| Tableau de bord | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Compagnies (création avec son admin) | ✓ | | | | |
+| Voyages (création, publication, passagers, annulation) | | ✓ | ✓ | ✓ (sans annulation) | |
+| Vente guichet (espèces, billets avec code) | | ✓ | ✓ | ✓ | |
+| Trajets, Gares, Véhicules | | ✓ | | | |
+| Colis & bagages (enregistrement, statuts, SMS) | | ✓ | ✓ | | ✓ |
+| Locations (offres, flotte de location) | | ✓ | | | |
+| Personnel (création des rôles) | ✓ | ✓ | lecture | | |
+| Clients | ✓ | ✓ | ✓ | ✓ | |
+| Réclamations | ✓ | ✓ | ✓ | | |
+| Suivi public d'un colis (`/suivi`, sans connexion) | ✓ | ✓ | ✓ | ✓ | ✓ |
 
-## Déploiement
+⚠️ Le menu est adapté au rôle pour alléger l'écran, mais **la sécurité est assurée par l'API** : chaque route y vérifie le rôle
+et la compagnie. Cacher un bouton n'est jamais une protection.
+
+## Session
+
+Le jeton d'accès (1 h) et le jeton de rafraîchissement (30 jours, usage unique) sont conservés dans le navigateur (`localStorage`)
+et renouvelés automatiquement. Une session expirée ramène à la page de connexion.
+
+## Déployer
 
 ```bash
-npm run build
+NEXT_PUBLIC_API_URL="https://votre-api.example.com" npm run build
 ```
-Héberge le dossier `dist/` sur Vercel, Netlify, ou tout hébergement statique —
-en pensant à renseigner `VITE_API_URL` vers votre backend déployé avant de builder.
 
-## Ce qui est branché sur le vrai serveur
+Hébergement conseillé : Vercel (déploiement Next.js natif). `NEXT_PUBLIC_API_URL` est lue **au moment du build** : définissez-la
+dans les variables du projet avant de construire. Côté API, ajoutez l'adresse du site à `CORS_ORIGIN`.
 
-Tout : création de compagnies, gares, trajets, véhicules, voyages (avec places
-calculées en temps réel), personnel (avec les 4 rôles créables), location de
-véhicules (demandes, réponse, flotte), colis & bagages, réclamations.
+## Structure
 
-Testé de bout en bout avec un serveur réel démarré : Admin crée une gare, un
-trajet, un compte caissier → le caissier se connecte avec le bon rôle → crée
-et publie un voyage → il apparaît immédiatement avec ses places disponibles.
+```
+src/app/login        connexion          src/app/suivi       suivi public d'un colis
+src/app/(app)/...    pages protégées    src/components     tableaux, formulaires, fenêtres
+src/lib/api.ts       client HTTP + jetons        src/lib/nav.ts   menu par rôle
+```
